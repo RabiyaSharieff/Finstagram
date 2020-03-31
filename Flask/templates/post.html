@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Post Page</title>
+</head>
+<body>
+<form action="/post" method="POST" enctype="multipart/form-data">
+	<input type="file" accept="image/*" name = "photo" required/> </br>
+	<p> Caption: </p>
+	<input type="text" name="caption">
+	<br>
+	<p> Make visible to all followers:</p>
+	<input type="checkbox" name = "allFollowers"/> </br>
+
+	<input type="submit" value = Upload />
+	{% if error %}
+		<p class="error"><strong>Error:</strong> {{error}}</p>
+	{% endif %}
+</form>
+<a href="/home">Go back</a>
+</body>
+</html>

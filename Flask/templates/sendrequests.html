@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Send Follow Requests:</title>
+</head>
+<body>
+	<form action="/sendrequests" method="POST">
+		Username:<input type="text" name="username" required>
+		<input type="submit" value = "Send Request"/> 
+
+	</form>
+
+	{% if  message %}
+	<p> {{ message }}  </p>
+	{% endif %}
+	<a href="/home">Go back</a>
+
+
+</body>
+</html>
+
