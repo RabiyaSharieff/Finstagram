@@ -10,13 +10,33 @@
 	<input type="text" name="caption">
 	<br>
 	<p> Make visible to all followers:</p>
-	<input type="checkbox" name = "allFollowers"/> </br>
-
+	<input type="checkbox" id='check' onclick="myFunc()" name = "allFollowers"/> </br>
+	<select id="groups" name="groups" multiple >
+		{% for group in groups %}
+		<option value ='{{group}}'> {{group}} </option>
+		{% endfor %}
+	</select>
+	<br>
 	<input type="submit" value = Upload />
-	{% if error %}
-		<p class="error"><strong>Error:</strong> {{error}}</p>
+
+	{% if  message %}
+	<p> {{ message }}  </p>
 	{% endif %}
+
 </form>
 <a href="/home">Go back</a>
 </body>
+<script type="text/javascript">
+	function myFunc(){
+		var checkbox = document.getElementById('check');
+		var groups =document.getElementById('groups');
+		if(checkbox.checked == true){
+			groups.style.display= 'none';
+		}
+		else{
+			groups.style.display='inline-block';
+		}
+
+	}
+</script>
 </html>

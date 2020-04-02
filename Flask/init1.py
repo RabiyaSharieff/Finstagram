@@ -26,6 +26,11 @@ conn = pymysql.connect(host='localhost',
                        charset='utf8mb4',
                        cursorclass=pymysql.cursors.DictCursor)
 
+def encrypt(strToHash):
+    encoded = hashlib.sha256(str.encode(strToHash))
+    return encoded.hexdigest()
+
+
 #Define a route to hello function
 @app.route('/')
 def hello():
@@ -47,12 +52,13 @@ def loginAuth():
     #grabs information from the forms
     username = request.form['username']
     password = request.form['password']
+    passwordHashed = encrypt(password + SALT)
 
     #cursor used to send queries
     cursor = conn.cursor()
     #executes query
     query = 'SELECT * FROM Person WHERE username = %s and password = %s'
-    cursor.execute(query, (username, password))
+    cursor.execute(query, (username, passwordHashed))
     #stores the results in a variable
     data = cursor.fetchone()
     #use fetchall() if you are expecting more than 1 data row
@@ -73,7 +79,8 @@ def loginAuth():
 def registerAuth():
     #grabs information from the forms
     username = request.form['username']
-    password = request.form['password']
+    #password = request.form['password']
+    passwordHashed = encrypt(request.form['password'] + SALT)
 
     #cursor used to send queries
     cursor = conn.cursor()
@@ -90,7 +97,7 @@ def registerAuth():
         return render_template('register.html', error = error)
     else:
         ins = 'INSERT INTO Person(username, password) VALUES(%s, %s)'
-        cursor.execute(ins, (username, password))
+        cursor.execute(ins, (username, passwordHashed))
         conn.commit()
         cursor.close()
         return render_template('index.html')
@@ -102,23 +109,12 @@ def home():
     else: 
         return render_template('index.html')
 
-# helper fxn for post
-# def savePicture(filename):
-
-#     random_hex = secrets.token_hex(8)
-#     _, f_ext = os.path.splitext(filename)
-#     picture_fn = random_hex + f_ext
-#     picture_path = os.path.join(app.root_path, 'photos', filename)
-#     output_size = (400, 500)
-#     i = Image.open(picture_path)
-#     i.thumbnail(output_size)
-#     i.save(picture_path)
-
-#     return picture_fn
 
 @app.route('/post', methods=['GET', 'POST'])
 def post():
     if 'username' in session:
+        groups = ['school', 'work', 'gym','dorm']
+        message = ""
         if request.method == 'POST':
 
             image_file = request.files.get("photo", "")
@@ -129,9 +125,10 @@ def post():
             #picture = savePicture(fileDirectory)
             if request.form.get("allFollowers"): # form is a dict [] ,get is a fxn ()
                 allFollowers = request.form.get("allFollowers")
+
             else:
                  allFollowers = ""
-
+    
             caption = request.form['caption']
             ts = time.time()
             timestamp=datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -140,12 +137,19 @@ def post():
                     VALUES(%s, %s, %s, %s, %s)'
             if allFollowers:
                 cursor.execute(ins, (timestamp, filepath, 1, caption, session['username']))
+                message="Successfully shared with all followers!"
                 conn.commit()
             else:
                 cursor.execute(ins, (timestamp, filepath, 0, caption, session['username']))
-                conn.commit() 
+                conn.commit()
+                groups = request.form.getlist('groups')
+                for group in groups:
+                    ins= "INSERT INTO SharedWith(pID, groupName, groupCreator) VALUES(LAST_INSERT_ID(), %s, %s)"
+                    cursor.execute(ins, (group, session['username']))
+                    message= "Successfully shared with the groups you selected!"
+                conn.commit()
             cursor.close()
-        return render_template('post.html')
+        return render_template('post.html', message=message, groups=groups)
     else: 
         return render_template('index.html')
  
@@ -161,43 +165,23 @@ def sendRequests():
             query = "SELECT followStatus FROM Follow WHERE follower = %s and followee = %s"
             cursor.execute(query,(session["username"], username))
             fStatus = cursor.fetchone()
-            print(fStatus)
-            if (fStatus):
+            if (fStatus): # check if we have previously sent a request
                 if (fStatus["followStatus"]==1): # does exist and accepted requets, followStatus==1  
-                    message = "%s already accepted your follow request. " % username 
+                    message = f'You already follow {username}!'
                 elif (fStatus["followStatus"]==0):  # does exist, havent accepted request yet ,  followStatus==0
-                    message = "You have already sent a request to %s" % username 
-            else:   # didnt send request yet 
+                    message = f'You have already sent a request to {username}'
+            else:   # didnt send request yet, send one
                 ins = "INSERT INTO Follow(follower, followee, followStatus) VALUES (%s, %s, %s)"
                 cursor.execute(ins, (session["username"], username, 0)) #set followstatus to 0
                 conn.commit()
-                message = "Request sent!"
-            query = 'SELECT * FROM Follow WHERE followee = %s AND follower = %s'
-            cursor.execute(query,(username, session['username']))
-            data = cursor.fetchone()
-            if(data['followStatus'] == 1):
-                error  = f'You already follow {username}!'
-                cursor.close()
-                return render_template('sendrequests.html', message = error)
-            elif (data['followStatus'] == 0):
-                error = f'You already sent a request to {username}'
-                cursor.close()
-                return render_template('sendrequests.html', message = error)
-            else: #WHY IS THIS CASE NOT WORKING???? showing "already sent"
-                print(data)
                 message = f'Request successfully sent to {username}'
-                return render_template('sendrequests.html', message = message)
-                query = 'INSERT INTO Follow VALUES(%s,%s,0)'
-                cursor.execute(query,(username, session['username']))
-                conn.commit()
-                cursor.close()
-        else: # no matching username 
-            error = 'That username does not exist, try another one'
-            cursor.close()
-            return render_template('sendrequests.html', message = error)
-            cursor.close()
 
-    return render_template('sendrequests.html') #
+        else: # no matching username 
+            message = f'{username} does not exist, try again'
+        cursor.close()
+        return render_template('sendrequests.html', message = message)
+
+    return render_template('sendrequests.html')
 
 @app.route('/managerequests', methods=['GET', 'POST'])
 def manageRequests():
@@ -210,12 +194,12 @@ def manageRequests():
         for user in selectedUsers:
             if request.form['action'] ==  'Accept':
                 query = 'UPDATE Follow SET followStatus = 1 WHERE followee=%s AND follower = %s'
-                cursor.execute(query, (user,session['username']))
+                cursor.execute(query, (session['username'], user))
                 conn.commit()
                 flash('The selected friend requests have been accepted!')
             elif request.form['action'] == 'Decline':
                 query = 'DELETE FROM Follow WHERE followee = %s AND follower = %s'
-                cursor.execute(query, (user, session['username']))
+                cursor.execute(query, (session['username'], user))
                 conn.commit()
                 flash('The selected friend requests have been deleted')
         return redirect(url_for('manageRequests'))
