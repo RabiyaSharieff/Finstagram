@@ -13,7 +13,7 @@
 	<input type="checkbox" id='check' onclick="myFunc()" name = "allFollowers"/> </br>
 	<select id="groups" name="groups" multiple >
 		{% for group in groups %}
-		<option value ='{{group}}'> {{group}} </option>
+		<option value ='{{group["groupName"]}}'> {{group["groupName"]}} </option>
 		{% endfor %}
 	</select>
 	<br>

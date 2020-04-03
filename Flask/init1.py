@@ -109,11 +109,16 @@ def home():
     else: 
         return render_template('index.html')
 
-
+#check how files are saved 
 @app.route('/post', methods=['GET', 'POST'])
 def post():
     if 'username' in session:
-        groups = ['school', 'work', 'gym','dorm']
+        cursor = conn.cursor()
+        query= 'SELECT groupName FROM FriendGroup WHERE groupCreator = %s '
+        cursor.execute(query, (session['username']))
+        groups = cursor.fetchall() #returns a list of 
+        cursor.close()
+
         message = ""
         if request.method == 'POST':
 
@@ -142,8 +147,8 @@ def post():
             else:
                 cursor.execute(ins, (timestamp, filepath, 0, caption, session['username']))
                 conn.commit()
-                groups = request.form.getlist('groups')
-                for group in groups:
+                myGroups = request.form.getlist('groups')
+                for group in myGroups:
                     ins= "INSERT INTO SharedWith(pID, groupName, groupCreator) VALUES(LAST_INSERT_ID(), %s, %s)"
                     cursor.execute(ins, (group, session['username']))
                     message= "Successfully shared with the groups you selected!"
