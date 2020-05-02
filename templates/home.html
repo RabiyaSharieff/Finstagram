@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head><link href="https://fonts.googleapis.com/css2?family=Oleo+Script&display=swap" rel="stylesheet">
+</head>
+<body>
+<h1 style = " font-family: 'Oleo Script', cursive; font-size: 50px; color: #0099cc" > Welcome to Finstagram! </h1>
+
+<b><big> You are logged in as {{username}} - {{firstName}} {{lastName}}</big></b>
+<br>
+<div style= "margin-top: 10px"> 
+<a href="/post"> Post a Photo!</a> </div>
+<br>
+<div style= "margin-top: 2px"> 
+<a href="/sendrequests"> Send a Follow Request!</a></div>
+<br>
+<div style= "margin-top: 2px">
+<a href="/managerequests"> Manage Follow Request</a></div>
+<br>
+<div style= "margin-top: 2px">
+<a href="/addFriendGroup"> Create a Freind Group! </a></div>
+<br>
+<div style= "margin-top: 2px">
+<a href="/logout">Logout</a></div>
+<br> 
+<br style=“line-height:5;”>
+<big>Your Feed: </big>
+<p> _______________________________________<p>
+
+ </div>
+        {% if posts %}
+        <div>
+            {% for post in posts %}
+
+            <p>Posted by: {{post.poster}} - {{post.firstName}} {{post.lastName}} </p>
+            <p><small class=text-muted> Photo ID: {{post.pID}}</small><p>
+            <p><small class=text-muted>Posted on: {{post.postingDate}}</small><p>
+            <p><img src="static/images/{{post.filePath}}" style= "width:30%"> <br><p>
+            <p>Caption: {{post.caption}}</p>
+                
+                <p> Tagged Users:
+                 {% if post.tagees %}
+                   {% for tagged in post.tagees %}
+                     {% if loop.last %}
+                    	<p>{{tagged.firstName}} {{tagged.lastName}} - {{tagged.username}} </p>
+
+                    {% else %}
+                    	<p>{{tagged.firstName}} {{tagged.lastName}} - {{tagged.username}},  </p>
+                    {% endif %}
+                  {% endfor %}
+                {% else %}
+                 <p>None</p> 
+                {% endif %}
+                
+                
+
+               <p> Reacts:
+                {% if post.reacters %}
+                    {% for reacter in post.reacters %}
+                        {% if loop.last %}
+                        <p>{{reacter.username}} commented "{{reacter.comment}}" and reacted with  "{{reacter.emoji}}"</p>
+
+                        {% else %}
+                        <p>{{reacter.username}} commented "{{reacter.comment}}" and reacted with "{{reacter.emoji}}",</p>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                None <!-- if no react or comment-->
+                {% endif %}
+                </p> 
+      
+
+                <p> _______________________________________</p>
+            {% endfor %}
+      </div>
+      {% else %}
+         <p>Posts that are visible to you will be here</p>
+      {% endif %}   
+</body>
+
+
+</html>

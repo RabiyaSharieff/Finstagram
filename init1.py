@@ -10,7 +10,7 @@ import secrets
 from PIL import Image 
 
 
-IMAGES_DIR = os.path.join(os.getcwd(), "photos")
+IMAGES_DIR = os.path.join(os.getcwd(), "images")
 
 SALT = 'cs3083'
 
@@ -80,7 +80,10 @@ def registerAuth():
     #grabs information from the forms
     username = request.form['username']
     #password = request.form['password']
-    passwordHashed = encrypt(request.form['password'] + SALT)
+    passwordHashed = encrypt(request.form['password'] + SALT) #encypts and store in database 
+    firstName = request.form['fname']
+    lastName = request.form['lname']
+    email = request.form['emailAddy']
 
     #cursor used to send queries
     cursor = conn.cursor()
@@ -96,25 +99,63 @@ def registerAuth():
         error = "This user already exists"
         return render_template('register.html', error = error)
     else:
-        ins = 'INSERT INTO Person(username, password) VALUES(%s, %s)'
-        cursor.execute(ins, (username, passwordHashed))
+        ins = 'INSERT INTO Person(username, password, firstName, lastName, email) VALUES(%s, %s,  %s, %s, %s)'
+        cursor.execute(ins, (username, passwordHashed, firstName, lastName, email))
         conn.commit()
         cursor.close()
         return render_template('index.html')
 
 @app.route('/home', methods=['GET'])
 def home():
-    if 'username' in session: #only return template of home if logged in (use in post)
-        return render_template('home.html')
-    else: 
-        return render_template('index.html')
+    # View visible photos 
+    username = session['username'] # get user info 
+    cursor = conn.cursor()
+    query = 'SELECT * FROM Person WHERE username =  %s'
+    cursor.execute( query, (username))
+    data = cursor.fetchone()
+    firstName = data['firstName']
+    lastName = data['lastName']
+    # get the photos visible to the username
+    query = 'SELECT pID,postingDate, filePath, allFollowers, caption, poster FROM Photo WHERE poster = %s OR pID IN (SELECT pID FROM Photo WHERE poster != %s AND allFollowers = 1 AND poster IN (SELECT followee FROM Follow WHERE follower = %s AND followee = poster AND followStatus = 1)) OR pID IN (SELECT pID FROM SharedWith NATURAL JOIN BelongTo NATURAL JOIN Photo WHERE username = %s AND poster != %s) ORDER BY postingDate DESC'
+    cursor.execute(query, (username, username, username, username, username))
+    data = cursor.fetchall()
+
+    for post in data: # post is a dictionary within a list of dictionaries for all the photos
+        #tags
+        query = 'SELECT username, firstName, lastName FROM Tag NATURAL JOIN Person NATURAL JOIN Photo WHERE tagStatus = 1 AND pID = %s'
+        cursor.execute(query, (post['pID']))
+        resultOne = cursor.fetchall()
+
+        if (resultOne):
+            post['tagees'] = resultOne
+            # print(post)
+
+        #reacts
+        query = 'SELECT firstName, lastName FROM Person WHERE username = %s'
+        cursor.execute(query, (post['poster']))
+        ownerData = cursor.fetchone()
+        post['firstName'] = ownerData['firstName']
+        post['lastName'] = ownerData['lastName']
+        query = "SELECT username, comment, emoji FROM ReactTo WHERE pID = %s"
+        cursor.execute(query, (post['pID']))
+        resultTwo = cursor.fetchall()
+        print(post['pID'])
+        print("The result:" , resultTwo)
+
+        if (resultTwo):
+            print("Made it here")
+            post['reacters'] = resultTwo
+
+    cursor.close()
+    return render_template('home.html', username=username, firstName=firstName, lastName =lastName, posts = data)
+
 
 #check how files are saved 
 @app.route('/post', methods=['GET', 'POST'])
 def post():
     if 'username' in session:
         cursor = conn.cursor()
-        query= 'SELECT groupName FROM FriendGroup WHERE groupCreator = %s '
+        query= 'SELECT groupName FROM FriendGroup WHERE groupCreator = %s'
         cursor.execute(query, (session['username']))
         groups = cursor.fetchall() #returns a list of 
         cursor.close()
@@ -122,7 +163,7 @@ def post():
         message = ""
         if request.method == 'POST':
 
-            image_file = request.files.get("photo", "")
+            image_file = request.files.get("photo", " ")
             image_name = image_file.filename
             filepath = os.path.join(IMAGES_DIR, image_name)
             image_file.save(filepath)
@@ -213,6 +254,32 @@ def manageRequests():
     return render_template('managerequests.html', followers = data)
 
 
+@app.route('/addFriendGroup', methods=['GET', 'POST'])
+def addFriendGroup():
+    if request.form:
+        groupName = request.form['groupName']
+        description = request.form['description']
+        cursor = conn.cursor()
+        # check to make sure the current user doest already created a group with groupName 
+        query = 'SELECT * FROM FriendGroup WHERE groupCreator = %s AND groupName = %s'
+        cursor.execute(query, (session['username'], groupName))
+        data = cursor.fetchone()
+        if data: # not good, return error message
+            error = f'You already have a friend group called {groupName}'
+            return render_template('addFriendGroup.html', message = error)
+        else: # good, add group into database
+            query = 'INSERT INTO FriendGroup VALUES(%s,%s,%s)'
+            cursor.execute(query, (groupName, session['username'],description))
+            
+            # If the group is created successfully, Finstagram adds the current user as a
+            # member of the group.
+            query_b = 'INSERT INTO BelongTo VALUES (%s,%s,%s)'
+            cursor.execute(query_b, (session['username'], groupName, session['username']))
+            conn.commit()
+            flash(f'Successfully created and belong to the {groupName} friend group')
+            return redirect(url_for('addFriendGroup'))
+    
+    return render_template('addFriendGroup.html')
 
 
 
