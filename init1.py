@@ -10,7 +10,7 @@ import secrets
 from PIL import Image 
 
 
-IMAGES_DIR = os.path.join(os.getcwd(), "images")
+IMAGES_DIR = os.path.join(os.getcwd(), "static/images")
 
 SALT = 'cs3083'
 
@@ -149,7 +149,6 @@ def home():
     cursor.close()
     return render_template('home.html', username=username, firstName=firstName, lastName =lastName, posts = data)
 
-
 #check how files are saved 
 @app.route('/post', methods=['GET', 'POST'])
 def post():
@@ -213,7 +212,7 @@ def sendRequests():
             fStatus = cursor.fetchone()
             if (fStatus): # check if we have previously sent a request
                 if (fStatus["followStatus"]==1): # does exist and accepted requets, followStatus==1  
-                    message = f'You already follow {username}!'
+                    message = f'You already follow {username} !'
                 elif (fStatus["followStatus"]==0):  # does exist, havent accepted request yet ,  followStatus==0
                     message = f'You have already sent a request to {username}'
             else:   # didnt send request yet, send one
