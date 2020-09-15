@@ -1,11 +1,11 @@
 # Finstagram
 Databases Project 
 
-Project Overview
+# Project Overview
 Finstagram is a web application for sharing photos. Finstagram gives users more privacy than many photo sharing sites by giving them more detailed control over who can see which photos they post. Users will be able to log in, post photos, view (some of) the photos posted by others (public photos, photos posted by people they are 'following', and close friends, detailed below); 'tag' photos items with handles of people, etc.
 
-Features
-Login: The user enters her username and password. Finstagram will add “salt” to the password, hash it, and check whether the hash of the password matches the stored password for that e-mail. If so, it initiates a session, storing the username and any other relevant data in session variables, then goes to the home page (or provides some mechanism for the user to select her next action.) If the password does not match the stored password for that username (or no such user exists) Finstagram informs the user that the the login failed and does not initiate the session.
+# Features
+# # Login: The user enters her username and password. Finstagram will add “salt” to the password, hash it, and check whether the hash of the password matches the stored password for that e-mail. If so, it initiates a session, storing the username and any other relevant data in session variables, then goes to the home page (or provides some mechanism for the user to select her next action.) If the password does not match the stored password for that username (or no such user exists) Finstagram informs the user that the the login failed and does not initiate the session.
 View visible photos and info about them: Finstagram shows the user the photoID, photoOwner’s name, and caption of photos that are visible to the her, arranged in reverse chronological order. Display the photo or include a link to display it. Along with each photo the following further information should be displayed or there should be an option to display it: timestamp, the first names and last names of people who have been tagged in the photo (taggees), provided that they have accepted the tags (Tag.acceptedTag == true)
 Post a photo: User enters the relevant data and a link to a real photo and a designation of whether the photo is visible to all followers (allFollowers == true) or only to members of designated CloseFriendGroups (allFollowers == false). Finstagram inserts data about the photo (including current time, and current user as owner) into the Photo table. If the photo is not visible to all followers, Finstagram gives the user a way to designate CloseFriendGroups that the user belongs to with which the Photo is shared.
 Manage Follows: a. User enters the username of someone they want to follow. Finstagram adds an appropriate tuple to Follow, with acceptedFollow == False. b. User sees list of requests others has made to follow them and has opportunity to accept, by setting acceptFollow to True or to decline by removing the request from the Follow table.
@@ -14,7 +14,7 @@ Tag a photo: Current user, whom we’ll call x, selects a photo that is visible 
 Add friend: User selects an existing CloseFriendGroup that they own and provides username of someone she’d like to add to the group. Finstagram checks whether there is exactly one person with that name and updates the Belong table to indicate that the selected person is now in the CloseFriendGroup.
 Like and Comment on Photos: Users can like and leave comments on individual's posts who they follow 
 
-Prerequisites
+# Prerequisites
 Python
 Download latest version of Python here: https://www.python.org/downloads/
 
